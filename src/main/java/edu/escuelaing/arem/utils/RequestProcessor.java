@@ -163,10 +163,18 @@ public class RequestProcessor implements Runnable {
     }
 
     private Request tryAddHeader(Request request, String inputLine) {
+        String[] params;
         try {
-            String[] params = inputLine.split(":");
-            request.addHeader(params[0].trim(), params[1].trim());
+            params = inputLine.split(":");
+            if (params.length == 2) {
+                params[0] = params[0].trim();
+                params[1] = params[1].trim();
+            }
         } catch (Exception e) {
+            params = null;
+        }
+        if (params != null) {
+            request.addHeader(params[0], params[1]);
         }
         return request;
     }

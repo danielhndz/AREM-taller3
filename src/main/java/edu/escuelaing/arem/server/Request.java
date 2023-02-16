@@ -29,8 +29,10 @@ public class Request {
     }
 
     public void addHeader(String k, String v) {
-        if (headers != null) {
+        try {
             headers.put(k, v);
+        } catch (Exception e) {
+            // Nothing to do
         }
     }
 
