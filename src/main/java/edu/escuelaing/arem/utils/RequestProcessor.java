@@ -13,6 +13,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import edu.escuelaing.arem.server.HttpServer;
+import edu.escuelaing.arem.server.Request;
 import edu.escuelaing.arem.services.RestService;
 import edu.escuelaing.arem.services.img.IcoService;
 import edu.escuelaing.arem.services.img.JpgService;
@@ -38,42 +39,31 @@ public class RequestProcessor implements Runnable {
         return new RequestProcessor(clientSocket);
     }
 
-    @SuppressWarnings("java:S3776")
     @Override
     public void run() {
         try {
-            boolean firstLine = true;
             boolean bodyLines = false;
             String inputLine;
-            String firstInputLine = null;
-            StringBuilder headers = new StringBuilder();
-            StringBuilder body = new StringBuilder();
             BufferedReader in = new BufferedReader(
                     new InputStreamReader(clientSocket.getInputStream()));
+            Request request = null;
             while ((inputLine = in.readLine()) != null) {
-                if (firstLine) {
-                    firstInputLine = inputLine;
-                    headers.append(inputLine);
-                    firstLine = false;
-                } else {
-                    if (inputLine.isBlank()) {
-                        bodyLines = true;
-                    } else if (bodyLines) {
-                        if (body.length() > 0) {
-                            body.append("\n" + inputLine);
-                        } else {
-                            body.append(inputLine);
-                        }
-                    } else {
-                        headers.append("\n" + inputLine);
-                    }
-                }
                 if (!in.ready()) {
                     break;
+                } else if (inputLine.isBlank() && request != null) {
+                    bodyLines = true;
+                } else if (bodyLines) {
+                    if (request.getBody() != null) {
+                        request.setBody(request.getBody() + "\n" + inputLine);
+                    } else {
+                        request.setBody(inputLine);
+                    }
+                } else {
+                    request = processLines(request, inputLine);
                 }
             }
-            if (firstInputLine != null && !firstInputLine.isBlank()) {
-                process(firstInputLine);
+            if (request != null) {
+                processRequestLine(request.getRequestURI());
             }
             in.close();
             clientSocket.close();
@@ -85,8 +75,17 @@ public class RequestProcessor implements Runnable {
         }
     }
 
+    private Request processLines(Request request, String inputLine) {
+        if (request == null) {
+            return new Request(inputLine);
+        } else if (!inputLine.isBlank()) {
+            return tryAddHeader(request, inputLine);
+        }
+        return request;
+    }
+
     @SuppressWarnings({ "java:S1075" })
-    private void process(String inputLine) throws IOException {
+    private void processRequestLine(String inputLine) throws IOException {
         String path;
         String method = parseMethod(inputLine);
         if (!method.equals("")) {
@@ -161,6 +160,15 @@ public class RequestProcessor implements Runnable {
                             + restService.getBody(path));
             out.close();
         }
+    }
+
+    private Request tryAddHeader(Request request, String inputLine) {
+        try {
+            String[] params = inputLine.split(":");
+            request.addHeader(params[0].trim(), params[1].trim());
+        } catch (Exception e) {
+        }
+        return request;
     }
 
     private String getExtension(String path) {
