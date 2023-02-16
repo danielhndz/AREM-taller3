@@ -1,6 +1,7 @@
 package edu.escuelaing.arem;
 
 import edu.escuelaing.arem.server.HttpServer;
+import edu.escuelaing.arem.server.Request;
 import edu.escuelaing.arem.services.RestService;
 import edu.escuelaing.arem.services.text.HtmlService;
 import edu.escuelaing.arem.services.text.PlainService;
@@ -21,10 +22,10 @@ public class Launcher {
                 e.printStackTrace();
             }
         }
-        server.get("/lab3v1", (String path) -> lab3v1(path));
+        server.get("/lab3v1", (Request path) -> lab3v1(path));
         server.get("/lab3v2", Launcher::lab3v1);
         server.get("/lab3v3", Launcher::lab3v2);
-        server.post("/lab3v1", (String path) -> lab3v2(path));
+        server.post("/lab3v1", (Request path) -> lab3v2(path));
         server.post("/lab3v2", Launcher::lab3v1);
         server.post("/lab3v3", Launcher::lab3v2);
         server.get("/setResDir", Launcher::setResDir);
@@ -32,7 +33,8 @@ public class Launcher {
         server.start();
     }
 
-    private static String setResDir(String path) {
+    private static String setResDir(Request request) {
+        String path = request.getRequestURI();
         RestService restService = new PlainService();
         int i = path.indexOf("?");
         if (i != -1) {
@@ -53,7 +55,8 @@ public class Launcher {
 
     }
 
-    private static String lab3v1(String path) {
+    private static String lab3v1(Request request) {
+        String path = request.getRequestURI();
         RestService restService = new PlainService();
         int i = path.indexOf("?");
         StringBuilder stringBuilder = new StringBuilder("\n");
@@ -70,7 +73,8 @@ public class Launcher {
                 "bien las tildes." + stringBuilder;
     }
 
-    private static String lab3v2(String path) {
+    @SuppressWarnings("java:S1172")
+    private static String lab3v2(Request request) {
         RestService restService = new HtmlService();
         return restService.getHeader() +
                 restService.getBody("/name/name.html");

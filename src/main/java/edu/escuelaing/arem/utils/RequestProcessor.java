@@ -63,7 +63,7 @@ public class RequestProcessor implements Runnable {
                 }
             }
             if (request != null) {
-                processRequestLine(request.getRequestURI());
+                processRequestLine(request);
             }
             in.close();
             clientSocket.close();
@@ -85,7 +85,8 @@ public class RequestProcessor implements Runnable {
     }
 
     @SuppressWarnings({ "java:S1075" })
-    private void processRequestLine(String inputLine) throws IOException {
+    private void processRequestLine(Request request) throws IOException {
+        String inputLine = request.getRequestURI();
         String path;
         String method = parseMethod(inputLine);
         if (!method.equals("")) {
@@ -97,7 +98,7 @@ public class RequestProcessor implements Runnable {
                 .replace(" HTTP/1.1", "");
         if (path.toLowerCase().startsWith("/exit")) {
             exit();
-        } else if (!processRequest(method, path) &&
+        } else if (!processRequest(request, path) &&
                 path.startsWith("/")) {
             LOGGER.log(Level.INFO, "\n\tPath:\n\n{0}\n", path);
             switch (path) {
@@ -114,22 +115,22 @@ public class RequestProcessor implements Runnable {
         }
     }
 
-    private boolean processRequest(String method, String path) throws IOException {
+    private boolean processRequest(Request request, String path) throws IOException {
         HttpServer server = HttpServer.getInstance();
         String route = path;
         if (path.contains("?")) {
             route = path.substring(0, path.indexOf("?"));
         }
-        if (method.equals("GET") &&
+        if (request.getMethod().equals("GET") &&
                 server.getGetRoutes().containsKey(route)) {
             PrintWriter out = new PrintWriter(clientSocket.getOutputStream());
-            out.write(server.getGetRoutes().get(route).apply(path));
+            out.write(server.getGetRoutes().get(route).apply(request));
             out.close();
             return true;
-        } else if (method.equals("POST")
+        } else if (request.getMethod().equals("POST")
                 && server.getPostRoutes().containsKey(route)) {
             PrintWriter out = new PrintWriter(clientSocket.getOutputStream());
-            out.write(server.getPostRoutes().get(route).apply(path));
+            out.write(server.getPostRoutes().get(route).apply(request));
             out.close();
             return true;
         }

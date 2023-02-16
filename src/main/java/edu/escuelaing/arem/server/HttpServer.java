@@ -19,8 +19,8 @@ public class HttpServer implements Runnable {
 
     private static final Logger LOGGER = Logger
             .getLogger(HttpServer.class.getName());
-    private static Map<String, Function<String, String>> getRoutes = new HashMap<>();
-    private static Map<String, Function<String, String>> postRoutes = new HashMap<>();
+    private static Map<String, Function<Request, String>> getRoutes = new HashMap<>();
+    private static Map<String, Function<Request, String>> postRoutes = new HashMap<>();
     private static final int PORT = 35000;
     private static HttpServer instance;
     private ExecutorService pool;
@@ -69,10 +69,7 @@ public class HttpServer implements Runnable {
                         clientSocket.hashCode());
                 pool.execute(RequestProcessor.getAnInstance(clientSocket));
             } catch (IOException e) {
-                /*
-                 * e.printStackTrace();
-                 * LOGGER.log(Level.INFO, "\n\tServer side\n\tAccept failed\n");
-                 */
+                // Nothing to do
             }
         }
 
@@ -85,12 +82,12 @@ public class HttpServer implements Runnable {
     }
 
     @SuppressWarnings("java:S4276")
-    public void get(String endpoint, Function<String, String> handler) {
+    public void get(String endpoint, Function<Request, String> handler) {
         getRoutes.put(endpoint, handler);
     }
 
     @SuppressWarnings("java:S4276")
-    public void post(String endpoint, Function<String, String> handler) {
+    public void post(String endpoint, Function<Request, String> handler) {
         postRoutes.put(endpoint, handler);
     }
 
@@ -148,11 +145,11 @@ public class HttpServer implements Runnable {
         return this.serverSocket;
     }
 
-    public Map<String, Function<String, String>> getGetRoutes() {
+    public Map<String, Function<Request, String>> getGetRoutes() {
         return getRoutes;
     }
 
-    public Map<String, Function<String, String>> getPostRoutes() {
+    public Map<String, Function<Request, String>> getPostRoutes() {
         return postRoutes;
     }
 }
